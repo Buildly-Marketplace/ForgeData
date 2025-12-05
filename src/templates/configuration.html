@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration & Status - ForgeData</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50">
+    {% set active_page = 'configuration' %}
+    {% include 'partials/nav.html' %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="configManager()">\n        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">System Configuration & Status</h1>
+            <p class="mt-2 text-gray-600">Manage credentials, connections, and view system status</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button @click="activeTab = 'status'" 
+                        :class="activeTab === 'status' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    📊 Status
+                </button>
+                <button @click="activeTab = 'cloud'" 
+                        :class="activeTab === 'cloud' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    ☁️ Cloud Credentials
+                </button>
+                <button @click="activeTab = 'databases'" 
+                        :class="activeTab === 'databases' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    🗄️ Database Connections
+                </button>
+            </nav>
+        </div>
+
+        <!-- Status Tab -->
+        <div x-show="activeTab === 'status'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Onboarding Status</h2>
+                
+                <template x-if="!status">
+                    <p class="text-gray-500">Loading status...</p>
+                </template>
+
+                <template x-if="status">
+                    <div>
+                        <!-- Overall Progress -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Overall Completion</span>
+                                <span class="text-sm font-medium text-gray-700" x-text="`${status.overall_progress || 0}%`"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                                     :style="`width: ${status.overall_progress || 0}%`"></div>
+                            </div>
+                        </div>
+
+                        <!-- Setup Steps -->
+                        <div class="space-y-3">
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Setup Steps</h3>
+                            
+                            <template x-for="(step, key) in status.steps" :key="key">
+                                <div class="flex items-center justify-between p-4 border rounded-lg"
+                                     :class="step.completed ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-white'">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex-shrink-0">
+                                            <span class="text-2xl" x-text="step.completed ? '✅' : '⭕'"></span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-medium text-gray-900" x-text="formatStepName(key)"></h4>
+                                            <p class="text-sm text-gray-600" x-text="step.description || 'No description'"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs text-gray-500" x-text="step.completed_at ? formatDate(step.completed_at) : 'Not completed'"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Cloud Credentials Tab -->
+        <div x-show="activeTab === 'cloud'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Cloud Provider Credentials</h2>
+                    <button @click="showAddCloudForm = !showAddCloudForm" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        + Add Credential
+                    </button>
+                </div>
+
+                <!-- Add Form -->
+                <div x-show="showAddCloudForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 class="font-medium mb-3">Add Cloud Credential</h3>
+                    <p class="text-sm text-gray-600 mb-4">Use the API to add credentials. Example:</p>
+                    <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8000/api/onboarding/credentials/gcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My GCP Account",
+    "project_id": "my-project-123",
+    "use_gcloud_cli": true,
+    "description": "Production GCP account"
+  }'</code></pre>
+                    <p class="text-sm text-gray-600 mt-3">
+                        Or use the Quick Setup API: 
+                        <code class="bg-gray-200 px-2 py-1 rounded">POST /api/onboarding/quick-setup</code>
+                    </p>
+                </div>
+
+                <!-- Credentials List -->
+                <div class="space-y-3">
+                    <template x-if="cloudCredentials.length === 0">
+                        <p class="text-gray-500 text-center py-8">No cloud credentials configured. Add one using the API.</p>
+                    </template>
+                    <template x-for="cred in cloudCredentials" :key="cred.id">
+                        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-medium text-gray-900" x-text="cred.name"></h4>
+                                    <p class="text-sm text-gray-600" x-text="`Provider: ${cred.provider}`"></p>
+                                    <template x-if="cred.description">
+                                        <p class="text-sm text-gray-500 mt-1" x-text="cred.description"></p>
+                                    </template>
+                                    <template x-if="cred.is_primary">
+                                        <span class="inline-block mt-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Primary</span>
+                                    </template>
+                                </div>
+                                <div class="text-sm text-gray-500" x-text="formatDate(cred.created_at)"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Connections Tab -->
+        <div x-show="activeTab === 'databases'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Database Connections</h2>
+                    <button @click="showAddDbForm = !showAddDbForm" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        + Add Connection
+                    </button>
+                </div>
+
+                <!-- Add Form -->
+                <div x-show="showAddDbForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 class="font-medium mb-3">Add Database Connection</h3>
+                    <p class="text-sm text-gray-600 mb-4">Use the API to add connections. Example:</p>
+                    <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8000/api/onboarding/database-connections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Database",
+    "database_type": "postgresql",
+    "host": "db.example.com",
+    "port": 5432,
+    "database": "mydb",
+    "username": "user",
+    "password": "pass",
+    "use_ssl": true
+  }'</code></pre>
+                </div>
+
+                <!-- Connections List -->
+                <div class="space-y-3">
+                    <template x-if="dbConnections.length === 0">
+                        <p class="text-gray-500 text-center py-8">No database connections configured. Add one using the API.</p>
+                    </template>
+                    <template x-for="conn in dbConnections" :key="conn.id">
+                        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-medium text-gray-900" x-text="conn.name"></h4>
+                                    <p class="text-sm text-gray-600">
+                                        <span x-text="conn.database_type"></span> @ 
+                                        <span x-text="conn.host"></span>:<span x-text="conn.port"></span>
+                                    </p>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Database: <span x-text="conn.database"></span>
+                                    </p>
+                                    <template x-if="conn.use_ssl">
+                                        <span class="inline-block mt-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">🔒 SSL Enabled</span>
+                                    </template>
+                                </div>
+                                <div class="text-sm text-gray-500" x-text="formatDate(conn.created_at)"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function configManager() {
+            return {
+                activeTab: 'status',
+                status: null,
+                cloudCredentials: [],
+                dbConnections: [],
+                showAddCloudForm: false,
+                showAddDbForm: false,
+                
+                async init() {
+                    await this.loadStatus();
+                    await this.loadCloudCredentials();
+                    await this.loadDbConnections();
+                },
+                
+                async loadStatus() {
+                    try {
+                        const response = await fetch('/api/onboarding/status');
+                        this.status = await response.json();
+                    } catch (error) {
+                        console.error('Failed to load status:', error);
+                    }
+                },
+                
+                async loadCloudCredentials() {
+                    try {
+                        const response = await fetch('/api/onboarding/cloud-credentials');
+                        const data = await response.json();
+                        this.cloudCredentials = Array.isArray(data) ? data : [];
+                    } catch (error) {
+                        console.error('Failed to load cloud credentials:', error);
+                        this.cloudCredentials = [];
+                    }
+                },
+                
+                async loadDbConnections() {
+                    try {
+                        const response = await fetch('/api/onboarding/database-connections');
+                        const data = await response.json();
+                        this.dbConnections = Array.isArray(data) ? data : [];
+                    } catch (error) {
+                        console.error('Failed to load database connections:', error);
+                        this.dbConnections = [];
+                    }
+                },
+                
+                formatStepName(key) {
+                    return key.split('_').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                },
+                
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    return new Date(dateString).toLocaleString();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

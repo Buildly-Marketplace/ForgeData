@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: forgemark-app
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+      OLLAMA_HOST: ollama:11434
+      DATABASE_URL: postgresql://postgres:password@db:5432/forgemark
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      - db
+      - ollama
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - forgemark-net
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: forgemark-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: forgemark
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - forgemark-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: forgemark-ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - forgemark-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  forgemark-net:
+    driver: bridge

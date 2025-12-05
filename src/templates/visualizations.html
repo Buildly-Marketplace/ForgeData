@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForgeData - Data Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    {% set active_page = 'visualizations' %}
+    {% include 'partials/nav.html' %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Visualization Mode Tabs -->
+        <div class="mb-8">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button 
+                        @click="activeMode = 'api'"
+                        :class="activeMode === 'api' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        📊 API Reports & Dashboards
+                    </button>
+                    <button 
+                        @click="activeMode = 'analytics'"
+                        :class="activeMode === 'analytics' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        🗄️ Database Analytics (Star Schema)
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- API Reports Mode -->
+        <div x-show="activeMode === 'api'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">API-Based Reporting</h2>
+                <p class="text-gray-600 mb-6">
+                    Create reports and dashboards using pre-defined API endpoints. Perfect for consistent, 
+                    production-ready visualizations with controlled data access.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Pre-built Endpoints</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Use curated API endpoints that return ready-to-visualize data
+                        </p>
+                        <div class="bg-gray-50 rounded p-3 text-xs font-mono">
+                            GET /api/reports/user-growth<br>
+                            GET /api/reports/revenue-by-product<br>
+                            GET /api/reports/decision-analytics
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Saved Reports</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Save frequently-used queries and share across your team
+                        </p>
+                        <div class="space-y-2">
+                            <div class="bg-blue-50 text-blue-700 rounded p-2 text-sm">
+                                📈 Monthly Active Users
+                            </div>
+                            <div class="bg-green-50 text-green-700 rounded p-2 text-sm">
+                                💰 Revenue Dashboard
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Scheduled Reports</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Automatically generate and email reports on a schedule
+                        </p>
+                        <div class="text-sm text-gray-500">
+                            Daily, Weekly, Monthly • Email, Slack, Webhook
+                        </div>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Role-Based Access</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Control who can see what data through API authentication
+                        </p>
+                        <div class="text-sm text-gray-500">
+                            OAuth2 • API Keys • Organization Isolation
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sample API Report -->
+                <div class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Sample: User Growth Report</h3>
+                    <button 
+                        @click="loadSampleAPIReport()"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Load Sample Data
+                    </button>
+                    <div id="api-chart" class="mt-4" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Analytics Mode -->
+        <div x-show="activeMode === 'analytics'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Database Analytics (Superset-Style)</h2>
+                <p class="text-gray-600 mb-6">
+                    Directly query your databases with SQL, explore schemas, and create ad-hoc visualizations. 
+                    Perfect for data analysts and exploratory analysis.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Direct SQL Queries</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Write custom SQL queries against any connected database
+                        </p>
+                        <div class="bg-gray-50 rounded p-3 text-xs font-mono">
+                            SELECT date, COUNT(*) as users<br>
+                            FROM core_coreuser<br>
+                            GROUP BY date<br>
+                            ORDER BY date DESC
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Star Schema Support</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Automatic detection of fact and dimension tables
+                        </p>
+                        <div class="text-sm">
+                            <div class="font-semibold text-blue-600">Fact Tables:</div>
+                            <div class="text-gray-600">orders, transactions, events</div>
+                            <div class="font-semibold text-green-600 mt-2">Dimensions:</div>
+                            <div class="text-gray-600">users, products, dates</div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Schema Explorer</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Browse tables, columns, relationships, and indexes
+                        </p>
+                        <div class="text-sm text-gray-500">
+                            Tables • Columns • Types • Foreign Keys • Indexes
+                        </div>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-lg mb-2">✓ Pivot Tables</h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Create Excel-style pivot tables for quick analysis
+                        </p>
+                        <div class="text-sm text-gray-500">
+                            Rows • Columns • Values • Aggregations
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Connection Selector -->
+                <div class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Select Database Connection</h3>
+                    <select 
+                        x-model="selectedConnection"
+                        class="w-full max-w-md border border-gray-300 rounded-lg px-4 py-2">
+                        <option value="">Choose a database...</option>
+                        <option value="1">Example Database 1</option>
+                        <option value="2">Example Database 2</option>
+                    </select>
+                </div>
+
+                <!-- SQL Query Interface -->
+                <div class="mt-6" x-show="selectedConnection">
+                    <h3 class="font-semibold text-lg mb-3">SQL Query</h3>
+                    <textarea 
+                        x-model="sqlQuery"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm"
+                        rows="5"
+                        placeholder="SELECT * FROM table_name LIMIT 10;"></textarea>
+                    <div class="mt-3 flex gap-3">
+                        <button 
+                            @click="executeSQLQuery()"
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            Execute Query
+                        </button>
+                        <button 
+                            @click="loadSchema()"
+                            class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                            View Schema
+                        </button>
+                        <button 
+                            @click="suggestStarSchema()"
+                            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            Suggest Star Schema
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Query Results -->
+                <div x-show="queryResults" class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Query Results</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                        <div x-show="queryResults?.status === 'success'" class="text-sm text-gray-600 mb-2">
+                            <span x-text="queryResults?.rows"></span> rows returned
+                        </div>
+                        <div id="analytics-results" class="max-h-96 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Schema View -->
+                <div x-show="schemaData" class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Database Schema</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div x-show="schemaData?.tables" class="space-y-4">
+                            <template x-for="table in schemaData?.tables?.slice(0, 5)" :key="table.name">
+                                <div class="border border-gray-200 rounded p-3">
+                                    <div class="font-semibold text-blue-600" x-text="table.name"></div>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        <span x-text="table.columns.length"></span> columns
+                                        <span x-show="table.primary_keys.length > 0" class="ml-2">
+                                            • PK: <span x-text="table.primary_keys.join(', ')"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Star Schema Suggestions -->
+                <div x-show="starSchemaSuggestions" class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Star Schema Analysis</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-900 mb-2">Potential Fact Tables</h4>
+                            <div class="space-y-2">
+                                <template x-for="fact in starSchemaSuggestions?.fact_tables" :key="fact.table">
+                                    <div class="bg-white rounded p-2 text-sm">
+                                        <div class="font-semibold" x-text="fact.table"></div>
+                                        <div class="text-gray-600 text-xs" x-text="fact.reason"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-900 mb-2">Potential Dimension Tables</h4>
+                            <div class="space-y-2">
+                                <template x-for="dim in starSchemaSuggestions?.dimension_tables?.slice(0, 5)" :key="dim.table">
+                                    <div class="bg-white rounded p-2 text-sm">
+                                        <div class="font-semibold" x-text="dim.table"></div>
+                                        <div class="text-gray-600 text-xs" x-text="dim.reason"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="mt-8 bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">When to Use Each Approach</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aspect</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">API Reports</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Database Analytics</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Best For</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Production dashboards, scheduled reports, end-users</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Ad-hoc analysis, data exploration, analysts</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Complexity</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Simple - just call an endpoint</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Advanced - requires SQL knowledge</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Performance</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Optimized, cached, rate-limited</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Direct DB queries (can be slower)</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Flexibility</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Pre-defined queries only</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Unlimited - write any SQL</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Security</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">High - controlled data access</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">Medium - direct DB access</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function visualizationApp() {
+            return {
+                activeMode: 'api',
+                selectedConnection: '',
+                sqlQuery: 'SELECT * FROM core_coreuser LIMIT 10;',
+                queryResults: null,
+                schemaData: null,
+                starSchemaSuggestions: null,
+
+                async loadSampleAPIReport() {
+                    // Sample data for demonstration
+                    const sampleData = {
+                        dates: ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12'],
+                        users: [89, 92, 95, 98, 101, 103, 105, 107, 108, 109, 109, 109]
+                    };
+
+                    const trace = {
+                        x: sampleData.dates,
+                        y: sampleData.users,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'Total Users',
+                        line: { color: '#3B82F6', width: 3 },
+                        marker: { size: 8 }
+                    };
+
+                    const layout = {
+                        title: 'User Growth Over Time',
+                        xaxis: { title: 'Month' },
+                        yaxis: { title: 'Total Users' },
+                        hovermode: 'closest'
+                    };
+
+                    Plotly.newPlot('api-chart', [trace], layout);
+                },
+
+                async executeSQLQuery() {
+                    if (!this.selectedConnection || !this.sqlQuery) {
+                        alert('Please select a connection and enter a query');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/analytics/query/sql', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                connection_id: parseInt(this.selectedConnection),
+                                query: this.sqlQuery
+                            })
+                        });
+
+                        this.queryResults = await response.json();
+                        
+                        if (this.queryResults.status === 'success') {
+                            this.renderTable(this.queryResults.data, this.queryResults.columns);
+                        }
+                    } catch (error) {
+                        alert('Query failed: ' + error.message);
+                    }
+                },
+
+                async loadSchema() {
+                    if (!this.selectedConnection) {
+                        alert('Please select a connection');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/analytics/schema/${this.selectedConnection}`);
+                        this.schemaData = await response.json();
+                    } catch (error) {
+                        alert('Failed to load schema: ' + error.message);
+                    }
+                },
+
+                async suggestStarSchema() {
+                    if (!this.selectedConnection) {
+                        alert('Please select a connection');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/analytics/star-schema/suggestions/${this.selectedConnection}`);
+                        this.starSchemaSuggestions = await response.json();
+                    } catch (error) {
+                        alert('Failed to analyze schema: ' + error.message);
+                    }
+                },
+
+                renderTable(data, columns) {
+                    const resultsDiv = document.getElementById('analytics-results');
+                    if (!data || data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="text-gray-500">No results</div>';
+                        return;
+                    }
+
+                    let html = '<table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-100"><tr>';
+                    columns.forEach(col => {
+                        html += `<th class="px-3 py-2 text-left font-medium text-gray-700">${col}</th>`;
+                    });
+                    html += '</tr></thead><tbody class="bg-white divide-y divide-gray-100">';
+                    
+                    data.forEach(row => {
+                        html += '<tr>';
+                        columns.forEach(col => {
+                            html += `<td class="px-3 py-2 text-gray-600">${row[col] || ''}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    
+                    html += '</tbody></table>';
+                    resultsDiv.innerHTML = html;
+                }
+            };
+        }
+    </script>
+</body>
+</html>

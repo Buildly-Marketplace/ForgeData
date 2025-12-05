@@ -1,0 +1,39 @@
+<!-- Universal Navigation Component -->
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Logo and Brand -->
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <img src="/static/forge-logo.png" alt="ForgeData Logo" class="h-8 w-auto mr-3">
+                    <span class="text-xl font-bold text-gray-900">ForgeData</span>
+                </a>
+                <span class="ml-3 text-sm text-gray-500">v1.0.0</span>
+            </div>
+            
+            <!-- Main Navigation Links -->
+            <div class="flex items-center space-x-4">
+                <a href="/" 
+                   class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium {{ 'bg-gray-100' if active_page == 'home' else '' }}">
+                    🏠 Home
+                </a>
+                <a href="/etl" 
+                   class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium {{ 'bg-gray-100' if active_page == 'etl' else '' }}">
+                    🔄 ETL
+                </a>
+                <a href="/visualizations" 
+                   class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium {{ 'bg-gray-100' if active_page == 'visualizations' else '' }}">
+                    📊 Visualizations
+                </a>
+                <a href="/configuration" 
+                   class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium {{ 'bg-gray-100' if active_page == 'configuration' else '' }}">
+                    ⚙️ Configuration
+                </a>
+                <a href="/api/docs" 
+                   class="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium bg-blue-50 border border-blue-200">
+                    📚 API Docs
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>

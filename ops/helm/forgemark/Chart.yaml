@@ -1,0 +1,17 @@
+apiVersion: v2
+name: forgemark
+description: A comprehensive marketing automation platform for multi-brand campaigns
+type: application
+version: 1.0.0
+appVersion: 1.0.0
+keywords:
+  - marketing
+  - automation
+  - ai
+  - analytics
+home: https://github.com/your-org/forgedata
+sources:
+  - https://github.com/your-org/forgedata
+maintainers:
+  - name: ForgeData Team
+    email: support@example.com

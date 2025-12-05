@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Management - ForgeData</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50">
+    {% set active_page = 'etl' %}
+    {% include 'partials/nav.html' %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="etlManager()">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">ETL Pipeline Manager</h1>
+            <p class="mt-2 text-gray-600">Backup, restore, and transform your databases with optional anonymization</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button @click="activeTab = 'backup'" 
+                        :class="activeTab === 'backup' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    💾 Backup
+                </button>
+                <button @click="activeTab = 'restore'" 
+                        :class="activeTab === 'restore' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    📥 Restore
+                </button>
+                <button @click="activeTab = 'transform'" 
+                        :class="activeTab === 'transform' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    🔄 Transform & Anonymize
+                </button>
+                <button @click="activeTab = 'jobs'" 
+                        :class="activeTab === 'jobs' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    📊 Job History
+                </button>
+            </nav>
+        </div>
+
+        <!-- Backup Tab -->
+        <div x-show="activeTab === 'backup'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Database Backup</h2>
+                <p class="text-gray-600 mb-6">Create a backup without anonymization (preserves original data)</p>
+                
+                <div class="space-y-4">
+                    <!-- Source Database -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Source Database</label>
+                        <select x-model="backupConfig.sourceDb" 
+                                @change="loadSourceTables('backup')"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select database...</option>
+                            <template x-for="conn in connections" :key="conn.id">
+                                <option :value="conn.id" x-text="`${conn.name} (${conn.provider})`"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Tables Selection -->
+                    <div x-show="backupConfig.sourceDb">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tables to Backup</label>
+                        <div class="border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto">
+                            <template x-if="sourceTables.backup.length === 0">
+                                <p class="text-gray-500 text-sm">Loading tables...</p>
+                            </template>
+                            <template x-if="sourceTables.backup.length > 0">
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" @change="toggleAllTables('backup', $event.target.checked)" class="mr-2">
+                                        <span class="font-medium text-sm">Select All</span>
+                                    </label>
+                                    <template x-for="table in sourceTables.backup" :key="table">
+                                        <label class="flex items-center ml-4">
+                                            <input type="checkbox" :value="table" x-model="backupConfig.selectedTables" class="mr-2">
+                                            <span class="text-sm" x-text="table"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Backup Location -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Backup Location</label>
+                        <input type="text" x-model="backupConfig.location" 
+                               placeholder="/path/to/backup or cloud://bucket/path"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <p class="mt-1 text-sm text-gray-500">Local path or cloud storage URL</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button @click="runBackup()" 
+                            :disabled="!backupConfig.sourceDb || backupConfig.selectedTables.length === 0"
+                            :class="!backupConfig.sourceDb || backupConfig.selectedTables.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                            class="w-full text-white font-semibold py-3 rounded-md transition-colors">
+                        Start Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restore Tab -->
+        <div x-show="activeTab === 'restore'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Database Restore</h2>
+                <p class="text-gray-600 mb-6">Restore data from backup (no anonymization applied)</p>
+                
+                <div class="space-y-4">
+                    <!-- Backup Source -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Backup Source</label>
+                        <input type="text" x-model="restoreConfig.backupPath" 
+                               placeholder="/path/to/backup.sql or cloud://bucket/backup.sql"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+
+                    <!-- Target Database -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Database</label>
+                        <select x-model="restoreConfig.targetDb" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select database...</option>
+                            <template x-for="conn in connections" :key="conn.id">
+                                <option :value="conn.id" x-text="`${conn.name} (${conn.provider})`"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Restore Mode -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Restore Mode</label>
+                        <select x-model="restoreConfig.mode" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="append">Append (add to existing data)</option>
+                            <option value="reset">Reset (drop and recreate tables)</option>
+                        </select>
+                    </div>
+
+                    <!-- Optional: Anonymize on Restore -->
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" x-model="restoreConfig.anonymizeOnRestore" class="mr-2">
+                            <span class="text-sm font-medium text-gray-700">Anonymize data during restore (optional)</span>
+                        </label>
+                        <p class="mt-1 text-sm text-gray-600 ml-6">Only enable if you need to anonymize data during restore. Default is off.</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button @click="runRestore()" 
+                            :disabled="!restoreConfig.backupPath || !restoreConfig.targetDb"
+                            :class="!restoreConfig.backupPath || !restoreConfig.targetDb ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'"
+                            class="w-full text-white font-semibold py-3 rounded-md transition-colors">
+                        Start Restore
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transform & Anonymize Tab -->
+        <div x-show="activeTab === 'transform'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Data Transformation & Anonymization</h2>
+                <p class="text-gray-600 mb-6">Transform and anonymize data for reporting and analytics (default for reporting)</p>
+                
+                <div class="space-y-4">
+                    <!-- Source Database -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Source Database</label>
+                        <select x-model="transformConfig.sourceDb" 
+                                @change="loadSourceTables('transform')"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select database...</option>
+                            <template x-for="conn in connections" :key="conn.id">
+                                <option :value="conn.id" x-text="`${conn.name} (${conn.provider})`"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Table Selection -->
+                    <div x-show="transformConfig.sourceDb">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Table to Transform</label>
+                        <select x-model="transformConfig.sourceTable" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select table...</option>
+                            <template x-for="table in sourceTables.transform" :key="table">
+                                <option :value="table" x-text="table"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Anonymization (Default ON for reporting) -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" x-model="transformConfig.anonymize" class="mr-2" checked>
+                            <span class="text-sm font-medium text-gray-700">Anonymize sensitive data (Recommended for reporting)</span>
+                        </label>
+                        <p class="mt-1 text-sm text-gray-600 ml-6">Applies hash, mask, redact, and generalization to protect PII</p>
+                    </div>
+
+                    <!-- Deduplication -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" x-model="transformConfig.deduplicate" class="mr-2">
+                            <span class="text-sm font-medium text-gray-700">Remove duplicate rows</span>
+                        </label>
+                    </div>
+
+                    <!-- Target Database -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Database (for transformed data)</label>
+                        <select x-model="transformConfig.targetDb" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select database...</option>
+                            <template x-for="conn in connections" :key="conn.id">
+                                <option :value="conn.id" x-text="`${conn.name} (${conn.provider})`"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Target Table Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Table Name</label>
+                        <input type="text" x-model="transformConfig.targetTable" 
+                               :placeholder="transformConfig.sourceTable ? `${transformConfig.sourceTable}_anonymized` : 'table_anonymized'"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+
+                    <!-- Action Button -->
+                    <button @click="runTransform()" 
+                            :disabled="!transformConfig.sourceDb || !transformConfig.sourceTable"
+                            :class="!transformConfig.sourceDb || !transformConfig.sourceTable ? 'bg-gray-300 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'"
+                            class="w-full text-white font-semibold py-3 rounded-md transition-colors">
+                        Start Transformation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job History Tab -->
+        <div x-show="activeTab === 'jobs'" class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Job History & Progress</h2>
+                
+                <!-- Refresh Button -->
+                <div class="mb-4">
+                    <button @click="loadJobs()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <!-- Jobs List -->
+                <div class="space-y-3">
+                    <template x-if="jobs.length === 0">
+                        <p class="text-gray-500 text-center py-8">No jobs yet. Start a backup, restore, or transformation.</p>
+                    </template>
+                    <template x-for="job in jobs" :key="job.id">
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900" x-text="job.name"></h3>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        <span class="font-medium">Type:</span> 
+                                        <span x-text="job.job_type || 'ETL'"></span>
+                                        <span class="mx-2">•</span>
+                                        <span class="font-medium">Started:</span> 
+                                        <span x-text="formatDate(job.started_at)"></span>
+                                    </p>
+                                    <template x-if="job.config && job.config.anonymize !== undefined">
+                                        <p class="text-sm text-gray-600">
+                                            <span class="font-medium">Anonymization:</span> 
+                                            <span x-text="job.config.anonymize ? 'Enabled ✓' : 'Disabled'"></span>
+                                        </p>
+                                    </template>
+                                </div>
+                                <div class="ml-4">
+                                    <span :class="{
+                                        'bg-yellow-100 text-yellow-800': job.status === 'running',
+                                        'bg-green-100 text-green-800': job.status === 'completed',
+                                        'bg-red-100 text-red-800': job.status === 'failed',
+                                        'bg-gray-100 text-gray-800': job.status === 'pending'
+                                    }" class="px-3 py-1 rounded-full text-xs font-semibold" x-text="job.status.toUpperCase()">
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <template x-if="job.status === 'running' && job.progress">
+                                <div class="mt-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                             :style="`width: ${job.progress}%`"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1" x-text="`${job.progress}% complete`"></p>
+                                </div>
+                            </template>
+
+                            <!-- Error Message -->
+                            <template x-if="job.error_message">
+                                <div class="mt-3 bg-red-50 border border-red-200 rounded p-2">
+                                    <p class="text-sm text-red-800" x-text="job.error_message"></p>
+                                </div>
+                            </template>
+
+                            <!-- Completed Info -->
+                            <template x-if="job.status === 'completed' && job.completed_at">
+                                <p class="text-sm text-gray-600 mt-2">
+                                    <span class="font-medium">Completed:</span> 
+                                    <span x-text="formatDate(job.completed_at)"></span>
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function etlManager() {
+            return {
+                activeTab: 'backup',
+                connections: [],
+                sourceTables: {
+                    backup: [],
+                    transform: []
+                },
+                jobs: [],
+                
+                backupConfig: {
+                    sourceDb: '',
+                    selectedTables: [],
+                    location: './backups'
+                },
+                
+                restoreConfig: {
+                    backupPath: '',
+                    targetDb: '',
+                    mode: 'append',
+                    anonymizeOnRestore: false
+                },
+                
+                transformConfig: {
+                    sourceDb: '',
+                    sourceTable: '',
+                    targetDb: '',
+                    targetTable: '',
+                    anonymize: true,  // Default ON for reporting
+                    deduplicate: false
+                },
+                
+                async init() {
+                    await this.loadConnections();
+                    await this.loadJobs();
+                    
+                    // Auto-refresh jobs every 5 seconds
+                    setInterval(() => this.loadJobs(), 5000);
+                },
+                
+                async loadConnections() {
+                    try {
+                        const response = await fetch('/api/onboarding/database-connections');
+                        const data = await response.json();
+                        this.connections = data;
+                    } catch (error) {
+                        console.error('Failed to load connections:', error);
+                    }
+                },
+                
+                async loadSourceTables(context) {
+                    const sourceDb = context === 'backup' ? this.backupConfig.sourceDb : this.transformConfig.sourceDb;
+                    if (!sourceDb) return;
+                    
+                    try {
+                        const response = await fetch(`/api/etl/connections/${sourceDb}/databases`);
+                        const data = await response.json();
+                        this.sourceTables[context] = data.databases || [];
+                    } catch (error) {
+                        console.error('Failed to load tables:', error);
+                    }
+                },
+                
+                toggleAllTables(context, checked) {
+                    if (checked) {
+                        this.backupConfig.selectedTables = [...this.sourceTables.backup];
+                    } else {
+                        this.backupConfig.selectedTables = [];
+                    }
+                },
+                
+                async runBackup() {
+                    try {
+                        const response = await fetch('/api/etl/backup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                connection_id: this.backupConfig.sourceDb,
+                                databases: this.backupConfig.selectedTables,
+                                output_path: this.backupConfig.location,
+                                anonymize: false  // Never anonymize backups
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Backup job started successfully!');
+                            this.activeTab = 'jobs';
+                            await this.loadJobs();
+                        } else {
+                            alert('Failed to start backup: ' + (result.detail || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        alert('Error starting backup: ' + error.message);
+                    }
+                },
+                
+                async runRestore() {
+                    try {
+                        const response = await fetch('/api/etl/restore', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                connection_id: this.restoreConfig.targetDb,
+                                backup_path: this.restoreConfig.backupPath,
+                                mode: this.restoreConfig.mode,
+                                anonymize: this.restoreConfig.anonymizeOnRestore  // Optional, default false
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Restore job started successfully!');
+                            this.activeTab = 'jobs';
+                            await this.loadJobs();
+                        } else {
+                            alert('Failed to start restore: ' + (result.detail || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        alert('Error starting restore: ' + error.message);
+                    }
+                },
+                
+                async runTransform() {
+                    try {
+                        const targetTable = this.transformConfig.targetTable || 
+                                          `${this.transformConfig.sourceTable}_anonymized`;
+                        
+                        const response = await fetch('/api/etl/transform', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                source_connection_id: this.transformConfig.sourceDb,
+                                target_connection_id: this.transformConfig.targetDb || this.transformConfig.sourceDb,
+                                source_table: this.transformConfig.sourceTable,
+                                target_table: targetTable,
+                                anonymize: this.transformConfig.anonymize,  // Default true for reporting
+                                deduplicate: this.transformConfig.deduplicate
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Transformation job started successfully!');
+                            this.activeTab = 'jobs';
+                            await this.loadJobs();
+                        } else {
+                            alert('Failed to start transformation: ' + (result.detail || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        alert('Error starting transformation: ' + error.message);
+                    }
+                },
+                
+                async loadJobs() {
+                    try {
+                        const response = await fetch('/api/etl/jobs');
+                        const data = await response.json();
+                        this.jobs = data;
+                    } catch (error) {
+                        console.error('Failed to load jobs:', error);
+                    }
+                },
+                
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    return new Date(dateString).toLocaleString();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

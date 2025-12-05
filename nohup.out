@@ -1,0 +1,115 @@
+INFO:     Will watch for changes in these directories: ['/Users/greglind/Projects/buildly/THE FORGE/ForgeData']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [42745] using StatReload
+INFO:     Started server process [42804]
+INFO:     Waiting for application startup.
+WARNING: Using generated encryption key. Set ENCRYPTION_KEY in .env for production!
+2025-12-05 14:10:07,483 - src.main - INFO - Starting ForgeData application...
+2025-12-05 14:10:07,483 - src.core.database - INFO - Initializing database...
+2025-12-05 14:10:07,497 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-12-05 14:10:07,497 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-12-05 14:10:07,498 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("connection_configs")
+2025-12-05 14:10:07,498 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("connection_configs")
+2025-12-05 14:10:07,498 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,498 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,498 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("etl_jobs")
+2025-12-05 14:10:07,498 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("etl_jobs")
+2025-12-05 14:10:07,498 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,498 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("reports")
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("reports")
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("cloud_credentials")
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("cloud_credentials")
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("database_connections")
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("database_connections")
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("onboarding_status")
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - PRAGMA main.table_info("onboarding_status")
+2025-12-05 14:10:07,499 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-12-05 14:10:07,499 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-12-05 14:10:07,500 INFO sqlalchemy.engine.Engine COMMIT
+2025-12-05 14:10:07,500 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-12-05 14:10:07,500 - src.core.database - INFO - Database initialized successfully
+2025-12-05 14:10:07,500 - src.main - INFO - ForgeData initialized successfully
+INFO:     Application startup complete.
+INFO:     127.0.0.1:57004 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57008 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+2025-12-05 14:10:14,587 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-12-05 14:10:14,587 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-12-05 14:10:14,591 INFO sqlalchemy.engine.Engine SELECT onboarding_status.id, onboarding_status.step, onboarding_status.completed, onboarding_status.completed_at, onboarding_status.data, onboarding_status.created_at, onboarding_status.updated_at 
+FROM onboarding_status
+2025-12-05 14:10:14,591 - sqlalchemy.engine.Engine - INFO - SELECT onboarding_status.id, onboarding_status.step, onboarding_status.completed, onboarding_status.completed_at, onboarding_status.data, onboarding_status.created_at, onboarding_status.updated_at 
+FROM onboarding_status
+2025-12-05 14:10:14,591 INFO sqlalchemy.engine.Engine [generated in 0.00015s] ()
+2025-12-05 14:10:14,591 - sqlalchemy.engine.Engine - INFO - [generated in 0.00015s] ()
+2025-12-05 14:10:14,592 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-12-05 14:10:14,592 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+INFO:     127.0.0.1:57011 - "GET /api/onboarding/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57013 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57020 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57023 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+2025-12-05 14:10:21,594 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-12-05 14:10:21,594 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-12-05 14:10:21,596 INFO sqlalchemy.engine.Engine SELECT cloud_credentials.id, cloud_credentials.name, cloud_credentials.provider, cloud_credentials.credentials_encrypted, cloud_credentials.is_active, cloud_credentials.is_primary, cloud_credentials.created_at, cloud_credentials.updated_at, cloud_credentials.description, cloud_credentials.created_by 
+FROM cloud_credentials
+2025-12-05 14:10:21,596 - sqlalchemy.engine.Engine - INFO - SELECT cloud_credentials.id, cloud_credentials.name, cloud_credentials.provider, cloud_credentials.credentials_encrypted, cloud_credentials.is_active, cloud_credentials.is_primary, cloud_credentials.created_at, cloud_credentials.updated_at, cloud_credentials.description, cloud_credentials.created_by 
+FROM cloud_credentials
+2025-12-05 14:10:21,596 INFO sqlalchemy.engine.Engine [generated in 0.00023s] ()
+2025-12-05 14:10:21,596 - sqlalchemy.engine.Engine - INFO - [generated in 0.00023s] ()
+2025-12-05 14:10:21,598 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-12-05 14:10:21,598 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+INFO:     127.0.0.1:57025 - "GET /api/onboarding/cloud-credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57027 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57035 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57037 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57043 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57051 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57056 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57059 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57061 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57074 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57076 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57082 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57084 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57092 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57095 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57110 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57114 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57140 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57151 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57153 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57162 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57168 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57182 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57184 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57192 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57195 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57203 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57208 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57214 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57225 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57229 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57235 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57237 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57243 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57252 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57258 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57267 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57275 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57278 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57286 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57298 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57311 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57314 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57323 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57333 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57343 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57356 - "GET /api/etl/jobs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57361 - "GET /api/etl/jobs HTTP/1.1" 200 OK
