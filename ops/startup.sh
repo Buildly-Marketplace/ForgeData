@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
-PORT=8000
+PORT=8003
 HOST="0.0.0.0"
 SKIP_VENV=false
 CLEAN_MODE=false
@@ -61,14 +61,14 @@ Commands:
     health              Check server health status
 
 Options (for setup command):
-    --port PORT         Specify port (default: 8000)
+    --port PORT         Specify port (default: 8003)
     --host HOST         Specify host (default: 0.0.0.0)
     --no-venv           Skip virtual environment creation
     --clean             Remove .venv and reinstall everything
     --help              Show this help message
 
 Options (for start/restart):
-    --port PORT         Specify port (default: 8000)
+    --port PORT         Specify port (default: 8003)
     --host HOST         Specify host (default: 0.0.0.0)
     
 Examples:

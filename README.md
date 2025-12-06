@@ -81,7 +81,7 @@ ForgeData consolidates data exploration, ETL processing, reporting, and visualiz
 - [Architecture](.github/prompts/architecture.md) - Technical architecture and data flow
 - [Development Standards](.github/prompts/development-standards.md) - Coding standards and best practices
 - [TODO List](.github/prompts/todo.md) - Current tasks and future enhancements
-- [API Documentation](http://localhost:8000/api/docs) - Interactive API documentation (when running)
+- [API Documentation](http://localhost:8003/api/docs) - Interactive API documentation (when running)
 
 ## License
 

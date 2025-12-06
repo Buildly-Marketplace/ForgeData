@@ -70,6 +70,94 @@ class OnboardingStepUpdate(BaseModel):
 
 # Endpoints
 
+@router.get("/detect-credentials")
+async def detect_local_credentials():
+    """Detect cloud provider credentials on localhost."""
+    import subprocess
+    import json
+    from pathlib import Path
+    
+    detected = {
+        "gcp": {"found": False, "details": None},
+        "aws": {"found": False, "details": None},
+        "digitalocean": {"found": False, "details": None}
+    }
+    
+    # Check GCP (gcloud)
+    try:
+        # Check if gcloud is installed
+        gcloud_check = subprocess.run(
+            ["which", "gcloud"], 
+            capture_output=True, 
+            text=True,
+            timeout=5
+        )
+        
+        if gcloud_check.returncode == 0:
+            # Get gcloud config
+            config_result = subprocess.run(
+                ["gcloud", "config", "list", "--format=json"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if config_result.returncode == 0:
+                config = json.loads(config_result.stdout)
+                if config.get("core", {}).get("account"):
+                    detected["gcp"]["found"] = True
+                    detected["gcp"]["details"] = {
+                        "account": config.get("core", {}).get("account"),
+                        "project": config.get("core", {}).get("project"),
+                        "method": "gcloud CLI"
+                    }
+    except Exception as e:
+        print(f"GCP detection error: {e}")
+    
+    # Check AWS
+    try:
+        aws_creds_file = Path.home() / ".aws" / "credentials"
+        aws_config_file = Path.home() / ".aws" / "config"
+        
+        if aws_creds_file.exists():
+            detected["aws"]["found"] = True
+            # Read profile names
+            with open(aws_creds_file, 'r') as f:
+                content = f.read()
+                profiles = [line.strip('[]').strip() for line in content.split('\n') if line.startswith('[')]
+            
+            detected["aws"]["details"] = {
+                "profiles": profiles[:5],  # Limit to first 5
+                "config_file": str(aws_creds_file),
+                "method": "AWS credentials file"
+            }
+    except Exception as e:
+        print(f"AWS detection error: {e}")
+    
+    # Check Digital Ocean
+    try:
+        doctl_check = subprocess.run(
+            ["which", "doctl"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if doctl_check.returncode == 0:
+            # Check for doctl config
+            do_config_dir = Path.home() / ".config" / "doctl"
+            if do_config_dir.exists():
+                detected["digitalocean"]["found"] = True
+                detected["digitalocean"]["details"] = {
+                    "config_dir": str(do_config_dir),
+                    "method": "doctl CLI"
+                }
+    except Exception as e:
+        print(f"Digital Ocean detection error: {e}")
+    
+    return detected
+
+
 @router.get("/status")
 async def get_onboarding_status(
     db: Session = Depends(get_db),

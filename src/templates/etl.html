@@ -51,46 +51,53 @@
                 <p class="text-gray-600 mb-6">Create a backup without anonymization (preserves original data)</p>
                 
                 <div class="space-y-4">
-                    <!-- Source Database -->
+                    <!-- Step 1: Select Database Connection (Server) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Source Database</label>
-                        <select x-model="backupConfig.sourceDb" 
-                                @change="loadSourceTables('backup')"
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Step 1: Select Database Server
+                        </label>
+                        <select x-model="backupConfig.connectionId" 
+                                @change="loadDatabases('backup')"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2">
-                            <option value="">Select database...</option>
+                            <option value="">Select database server...</option>
                             <template x-for="conn in connections" :key="conn.id">
                                 <option :value="conn.id" x-text="`${conn.name} (${conn.provider})`"></option>
                             </template>
                         </select>
                     </div>
 
-                    <!-- Tables Selection -->
-                    <div x-show="backupConfig.sourceDb">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tables to Backup</label>
+                    <!-- Step 2: Select Databases from Server -->
+                    <div x-show="backupConfig.connectionId">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Step 2: Select Databases to Backup
+                        </label>
                         <div class="border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto">
-                            <template x-if="sourceTables.backup.length === 0">
-                                <p class="text-gray-500 text-sm">Loading tables...</p>
+                            <template x-if="availableDatabases.backup.length === 0">
+                                <p class="text-gray-500 text-sm">Loading databases...</p>
                             </template>
-                            <template x-if="sourceTables.backup.length > 0">
+                            <template x-if="availableDatabases.backup.length > 0">
                                 <div class="space-y-2">
                                     <label class="flex items-center">
-                                        <input type="checkbox" @change="toggleAllTables('backup', $event.target.checked)" class="mr-2">
-                                        <span class="font-medium text-sm">Select All</span>
+                                        <input type="checkbox" @change="toggleAllDatabases('backup', $event.target.checked)" class="mr-2">
+                                        <span class="font-medium text-sm">Select All Databases</span>
                                     </label>
-                                    <template x-for="table in sourceTables.backup" :key="table">
+                                    <template x-for="db in availableDatabases.backup" :key="db">
                                         <label class="flex items-center ml-4">
-                                            <input type="checkbox" :value="table" x-model="backupConfig.selectedTables" class="mr-2">
-                                            <span class="text-sm" x-text="table"></span>
+                                            <input type="checkbox" :value="db" x-model="backupConfig.selectedDatabases" class="mr-2">
+                                            <span class="text-sm" x-text="db"></span>
                                         </label>
                                     </template>
                                 </div>
                             </template>
                         </div>
+                        <p class="mt-1 text-sm text-gray-500">
+                            <span x-text="backupConfig.selectedDatabases.length"></span> database(s) selected
+                        </p>
                     </div>
 
                     <!-- Backup Location -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Backup Location</label>
+                    <div x-show="backupConfig.selectedDatabases.length > 0">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Step 3: Backup Location</label>
                         <input type="text" x-model="backupConfig.location" 
                                placeholder="/path/to/backup or cloud://bucket/path"
                                class="w-full border border-gray-300 rounded-md px-3 py-2">
@@ -99,10 +106,10 @@
 
                     <!-- Action Button -->
                     <button @click="runBackup()" 
-                            :disabled="!backupConfig.sourceDb || backupConfig.selectedTables.length === 0"
-                            :class="!backupConfig.sourceDb || backupConfig.selectedTables.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                            :disabled="!backupConfig.connectionId || backupConfig.selectedDatabases.length === 0"
+                            :class="!backupConfig.connectionId || backupConfig.selectedDatabases.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
                             class="w-full text-white font-semibold py-3 rounded-md transition-colors">
-                        Start Backup
+                        Start Backup (<span x-text="backupConfig.selectedDatabases.length"></span> database(s))
                     </button>
                 </div>
             </div>
@@ -325,15 +332,15 @@
             return {
                 activeTab: 'backup',
                 connections: [],
-                sourceTables: {
+                availableDatabases: {
                     backup: [],
                     transform: []
                 },
                 jobs: [],
                 
                 backupConfig: {
-                    sourceDb: '',
-                    selectedTables: [],
+                    connectionId: '',
+                    selectedDatabases: [],
                     location: './backups'
                 },
                 
@@ -371,24 +378,25 @@
                     }
                 },
                 
-                async loadSourceTables(context) {
-                    const sourceDb = context === 'backup' ? this.backupConfig.sourceDb : this.transformConfig.sourceDb;
-                    if (!sourceDb) return;
+                async loadDatabases(context) {
+                    const connectionId = this.backupConfig.connectionId;
+                    if (!connectionId) return;
                     
                     try {
-                        const response = await fetch(`/api/etl/connections/${sourceDb}/databases`);
+                        const response = await fetch(`/api/etl/connections/${connectionId}/databases`);
                         const data = await response.json();
-                        this.sourceTables[context] = data.databases || [];
+                        this.availableDatabases[context] = data.databases || [];
                     } catch (error) {
-                        console.error('Failed to load tables:', error);
+                        console.error('Failed to load databases:', error);
+                        alert('Error loading databases from server. Check console for details.');
                     }
                 },
                 
-                toggleAllTables(context, checked) {
+                toggleAllDatabases(context, checked) {
                     if (checked) {
-                        this.backupConfig.selectedTables = [...this.sourceTables.backup];
+                        this.backupConfig.selectedDatabases = [...this.availableDatabases.backup];
                     } else {
-                        this.backupConfig.selectedTables = [];
+                        this.backupConfig.selectedDatabases = [];
                     }
                 },
                 
@@ -398,8 +406,8 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                connection_id: this.backupConfig.sourceDb,
-                                databases: this.backupConfig.selectedTables,
+                                connection_id: this.backupConfig.connectionId,
+                                databases: this.backupConfig.selectedDatabases,
                                 output_path: this.backupConfig.location,
                                 anonymize: false  // Never anonymize backups
                             })
@@ -407,7 +415,7 @@
                         
                         const result = await response.json();
                         if (response.ok) {
-                            alert('Backup job started successfully!');
+                            alert(`Backup job started for ${this.backupConfig.selectedDatabases.length} database(s)!`);
                             this.activeTab = 'jobs';
                             await this.loadJobs();
                         } else {

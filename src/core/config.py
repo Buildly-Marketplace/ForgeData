@@ -16,11 +16,12 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8003
     
     # Security
     SECRET_KEY: str = "change-this-in-production"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ENCRYPTION_KEY: str = ""  # For credential encryption - auto-generated if not set
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8003"]
     
     # Authentication Integration
     AUTH_API_URL: str = ""

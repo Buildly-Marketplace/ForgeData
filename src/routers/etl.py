@@ -8,12 +8,21 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import uuid4
 import logging
+import os
 
 from src.routers.auth import get_current_user, UserData
 from src.services.etl_service import ETLService
 from src.core.database import get_session
 
 logger = logging.getLogger(__name__)
+
+# Get encryption key from environment
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+if not ENCRYPTION_KEY:
+    # Generate a default key for development (should be in env for production)
+    from cryptography.fernet import Fernet
+    ENCRYPTION_KEY = Fernet.generate_key().decode()
+    logger.warning("Using generated encryption key. Set ENCRYPTION_KEY in .env for production!")
 
 router = APIRouter()
 
@@ -425,13 +434,8 @@ async def list_databases(
     """
     try:
         from src.services.credential_service import CredentialService
-        import os
         
-        encryption_key = os.getenv("ENCRYPTION_KEY")
-        if not encryption_key:
-            raise HTTPException(status_code=500, detail="Encryption key not configured")
-        
-        cred_service = CredentialService(encryption_key)
+        cred_service = CredentialService(ENCRYPTION_KEY)
         
         # Get database connection
         conn = await cred_service.get_database_connection(db, connection_id)

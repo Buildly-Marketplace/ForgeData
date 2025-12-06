@@ -74,8 +74,8 @@ class CredentialService:
         )
         
         db.add(credential)
-        db.commit()
-        db.refresh(credential)
+        await db.commit()
+        await db.refresh(credential)
         return credential
     
     async def get_cloud_credential(self, db: AsyncSession, credential_id: int) -> Optional[Dict[str, Any]]:
@@ -195,8 +195,8 @@ class CredentialService:
         )
         
         db.add(connection)
-        db.commit()
-        db.refresh(connection)
+        await db.commit()
+        await db.refresh(connection)
         return connection
     
     async def get_database_connection(self, db: AsyncSession, connection_id: int) -> Optional[Dict[str, Any]]:
@@ -315,8 +315,8 @@ class CredentialService:
         if data:
             status.data = json.dumps(data)
         
-        db.commit()
-        db.refresh(status)
+        await db.commit()
+        await db.refresh(status)
         return status
     
     async def get_onboarding_status(self, db: AsyncSession) -> Dict[str, Any]:

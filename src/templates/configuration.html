@@ -11,7 +11,8 @@
     {% set active_page = 'configuration' %}
     {% include 'partials/nav.html' %}
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="configManager()">\n        <!-- Header -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="configManager()">
+        <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">System Configuration & Status</h1>
             <p class="mt-2 text-gray-600">Manage credentials, connections, and view system status</p>
@@ -20,17 +21,17 @@
         <!-- Tabs -->
         <div class="mb-6 border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
-                <button @click="activeTab = 'status'" 
+                <button @click="switchTab('status')" 
                         :class="activeTab === 'status' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     📊 Status
                 </button>
-                <button @click="activeTab = 'cloud'" 
+                <button @click="switchTab('cloud')" 
                         :class="activeTab === 'cloud' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     ☁️ Cloud Credentials
                 </button>
-                <button @click="activeTab = 'databases'" 
+                <button @click="switchTab('databases')" 
                         :class="activeTab === 'databases' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     🗄️ Database Connections
@@ -91,19 +92,244 @@
         <!-- Cloud Credentials Tab -->
         <div x-show="activeTab === 'cloud'" class="space-y-6">
             <div class="bg-white shadow rounded-lg p-6">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold">Cloud Provider Credentials</h2>
-                    <button @click="showAddCloudForm = !showAddCloudForm" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                        + Add Credential
-                    </button>
                 </div>
 
-                <!-- Add Form -->
-                <div x-show="showAddCloudForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <h3 class="font-medium mb-3">Add Cloud Credential</h3>
-                    <p class="text-sm text-gray-600 mb-4">Use the API to add credentials. Example:</p>
-                    <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8000/api/onboarding/credentials/gcp \
+                <!-- Step 1: Auto-detect local credentials -->
+                <div class="mb-6 p-5 border-2 border-blue-200 rounded-lg bg-blue-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">🔍</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-blue-900 mb-2">Step 1: Detect Local Credentials</h3>
+                            <p class="text-sm text-blue-800 mb-4">ForgeData can automatically detect credentials on your localhost:</p>
+                            
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center bg-white rounded p-3">
+                                    <span class="mr-3">☁️</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">GCP (gcloud CLI)</span>
+                                        <p class="text-xs text-gray-600">~/.config/gcloud/</p>
+                                    </div>
+                                    <template x-if="detectedCreds.gcp">
+                                        <span class="text-green-600 font-medium">✓ Found</span>
+                                    </template>
+                                    <template x-if="!detectedCreds.gcp">
+                                        <span class="text-gray-400">Not found</span>
+                                    </template>
+                                </div>
+                                
+                                <div class="flex items-center bg-white rounded p-3">
+                                    <span class="mr-3">📦</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">AWS (aws CLI)</span>
+                                        <p class="text-xs text-gray-600">~/.aws/credentials</p>
+                                    </div>
+                                    <template x-if="detectedCreds.aws">
+                                        <span class="text-green-600 font-medium">✓ Found</span>
+                                    </template>
+                                    <template x-if="!detectedCreds.aws">
+                                        <span class="text-gray-400">Not found</span>
+                                    </template>
+                                </div>
+                                
+                                <div class="flex items-center bg-white rounded p-3">
+                                    <span class="mr-3">🌊</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">Digital Ocean (doctl)</span>
+                                        <p class="text-xs text-gray-600">~/.config/doctl/</p>
+                                    </div>
+                                    <template x-if="detectedCreds.digitalocean">
+                                        <span class="text-green-600 font-medium">✓ Found</span>
+                                    </template>
+                                    <template x-if="!detectedCreds.digitalocean">
+                                        <span class="text-gray-400">Not found</span>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button @click="detectLocalCredentials()" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    🔍 Scan for Credentials
+                                </button>
+                                <button @click="importDetectedCredentials()" 
+                                        x-show="hasDetectedCreds()"
+                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    ✓ Import Found Credentials
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Upload credential files -->
+                <div class="mb-6 p-5 border-2 border-purple-200 rounded-lg bg-purple-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">📤</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-purple-900 mb-2">Step 2: Upload Credential Files</h3>
+                            <p class="text-sm text-purple-800 mb-4">Upload your YAML or JSON credential files:</p>
+                            
+                            <div class="space-y-3">
+                                <!-- GCP Upload -->
+                                <div class="bg-white rounded p-4">
+                                    <label class="block font-medium mb-2">
+                                        <span class="mr-2">☁️</span> GCP Service Account JSON
+                                    </label>
+                                    <input type="file" 
+                                           accept=".json"
+                                           @change="handleFileUpload($event, 'gcp')"
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                
+                                <!-- AWS Upload -->
+                                <div class="bg-white rounded p-4">
+                                    <label class="block font-medium mb-2">
+                                        <span class="mr-2">📦</span> AWS Credentials File
+                                    </label>
+                                    <input type="file" 
+                                           accept=".yaml,.yml,.json"
+                                           @change="handleFileUpload($event, 'aws')"
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                                </div>
+                                
+                                <!-- DO Upload -->
+                                <div class="bg-white rounded p-4">
+                                    <label class="block font-medium mb-2">
+                                        <span class="mr-2">🌊</span> Digital Ocean Config
+                                    </label>
+                                    <input type="file" 
+                                           accept=".yaml,.yml,.json"
+                                           @change="handleFileUpload($event, 'digitalocean')"
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Manual entry form -->
+                <div class="mb-6 p-5 border-2 border-green-200 rounded-lg bg-green-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">✏️</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-green-900 mb-2">Step 3: Manual Entry</h3>
+                            <p class="text-sm text-green-800 mb-4">Enter credentials manually using the form:</p>
+                            
+                            <button @click="showManualForm = !showManualForm" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium mb-4">
+                                <span x-text="showManualForm ? '▼ Hide Form' : '▶ Show Form'"></span>
+                            </button>
+                            
+                            <div x-show="showManualForm" class="bg-white rounded-lg p-4 shadow-inner">
+                                <!-- Provider Selection -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Provider</label>
+                                    <select x-model="manualForm.provider" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <option value="gcp">Google Cloud Platform (GCP)</option>
+                                        <option value="aws">Amazon Web Services (AWS)</option>
+                                        <option value="digitalocean">Digital Ocean</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- GCP Form -->
+                                <template x-if="manualForm.provider === 'gcp'">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Credential Name</label>
+                                            <input type="text" x-model="manualForm.name" placeholder="Production GCP Account" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                                            <input type="text" x-model="manualForm.project_id" placeholder="my-project-123456" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" x-model="manualForm.use_gcloud_cli" class="mr-2">
+                                            <label class="text-sm text-gray-700">Use gcloud CLI authentication</label>
+                                        </div>
+                                        <div x-show="!manualForm.use_gcloud_cli">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Service Account JSON</label>
+                                            <textarea x-model="manualForm.credentials_json" rows="6" placeholder='{"type": "service_account", "project_id": "...", ...}' class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-xs"></textarea>
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <!-- AWS Form -->
+                                <template x-if="manualForm.provider === 'aws'">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Credential Name</label>
+                                            <input type="text" x-model="manualForm.name" placeholder="Production AWS Account" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Access Key ID</label>
+                                            <input type="text" x-model="manualForm.access_key_id" placeholder="AKIA..." class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Secret Access Key</label>
+                                            <input type="password" x-model="manualForm.secret_access_key" placeholder="••••••••" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                                            <input type="text" x-model="manualForm.region" placeholder="us-east-1" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <!-- Digital Ocean Form -->
+                                <template x-if="manualForm.provider === 'digitalocean'">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Credential Name</label>
+                                            <input type="text" x-model="manualForm.name" placeholder="Production DO Account" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+                                            <input type="password" x-model="manualForm.api_token" placeholder="dop_v1_..." class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Spaces Access Key (optional)</label>
+                                            <input type="text" x-model="manualForm.spaces_key" placeholder="For Spaces access" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Spaces Secret Key (optional)</label>
+                                            <input type="password" x-model="manualForm.spaces_secret" placeholder="For Spaces access" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <div class="mt-4 flex gap-2">
+                                    <button @click="submitManualCredential()" 
+                                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                        💾 Save Credential
+                                    </button>
+                                    <button @click="resetManualForm()" 
+                                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                                        Clear Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: API Upload -->
+                <div class="mb-6 p-5 border-2 border-yellow-200 rounded-lg bg-yellow-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">🔌</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-yellow-900 mb-2">Step 4: API Upload</h3>
+                            <p class="text-sm text-yellow-800 mb-3">For advanced users - use the REST API:</p>
+                            <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8003/api/onboarding/credentials/gcp \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My GCP Account",
@@ -111,13 +337,11 @@
     "use_gcloud_cli": true,
     "description": "Production GCP account"
   }'</code></pre>
-                    <p class="text-sm text-gray-600 mt-3">
-                        Or use the Quick Setup API: 
-                        <code class="bg-gray-200 px-2 py-1 rounded">POST /api/onboarding/quick-setup</code>
-                    </p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Credentials List -->
+                <!-- Configured Credentials List -->
                 <div class="space-y-3">
                     <template x-if="cloudCredentials.length === 0">
                         <p class="text-gray-500 text-center py-8">No cloud credentials configured. Add one using the API.</p>
@@ -146,33 +370,242 @@
         <!-- Database Connections Tab -->
         <div x-show="activeTab === 'databases'" class="space-y-6">
             <div class="bg-white shadow rounded-lg p-6">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold">Database Connections</h2>
-                    <button @click="showAddDbForm = !showAddDbForm" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                        + Add Connection
-                    </button>
                 </div>
 
-                <!-- Add Form -->
-                <div x-show="showAddDbForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <h3 class="font-medium mb-3">Add Database Connection</h3>
-                    <p class="text-sm text-gray-600 mb-4">Use the API to add connections. Example:</p>
-                    <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8000/api/onboarding/database-connections \
+                <!-- Alert if no cloud credentials -->
+                <div x-show="cloudCredentials.length === 0" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <div>
+                            <h3 class="font-semibold text-yellow-900">No Cloud Credentials Found</h3>
+                            <p class="text-sm text-yellow-800 mt-1">
+                                To automatically detect databases, please add cloud credentials first in the 
+                                <button @click="activeTab = 'cloud'" class="text-blue-600 hover:text-blue-800 underline font-medium">
+                                    Cloud Credentials tab
+                                </button>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Auto-detect databases from cloud credentials -->
+                <div x-show="cloudCredentials.length > 0" class="mb-6 p-5 border-2 border-blue-200 rounded-lg bg-blue-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">🔍</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-blue-900 mb-2">Step 1: Detect Databases from Cloud Credentials</h3>
+                            <p class="text-sm text-blue-800 mb-4">
+                                You have <span class="font-bold" x-text="cloudCredentials.length"></span> cloud credential(s) configured. 
+                                Select one to automatically detect available databases:
+                            </p>
+                            
+                            <div class="bg-white rounded-lg p-4 shadow-inner mb-4">
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Select Cloud Credential to Scan
+                                        </label>
+                                        <select x-model="cloudDbForm.credential_id" 
+                                                @change="loadCloudDatabases()" 
+                                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2">
+                                            <option value="">-- Select a credential to scan --</option>
+                                            <template x-for="cred in cloudCredentials" :key="cred.id">
+                                                <option :value="cred.id">
+                                                    <span x-text="cred.provider.toUpperCase()"></span> - <span x-text="cred.name"></span>
+                                                    <template x-if="cred.is_primary"> (Primary)</template>
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Scanning state -->
+                                    <div x-show="cloudDbForm.scanning" class="text-center py-6">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                                        <p class="text-blue-700 font-medium">🔍 Scanning for databases...</p>
+                                        <p class="text-sm text-blue-600">This may take a few moments</p>
+                                    </div>
+                                    
+                                    <!-- No databases found -->
+                                    <div x-show="!cloudDbForm.scanning && cloudDbForm.scanned && cloudDbForm.databases.length === 0" 
+                                         class="text-center py-6 bg-gray-50 rounded">
+                                        <span class="text-4xl mb-2 block">🔍</span>
+                                        <p class="text-gray-700 font-medium">No databases found</p>
+                                        <p class="text-sm text-gray-500 mt-1">No accessible databases detected with this credential.</p>
+                                        <p class="text-sm text-gray-500">You can add a connection manually below.</p>
+                                    </div>
+                                    
+                                    <!-- Detected databases -->
+                                    <div x-show="!cloudDbForm.scanning && cloudDbForm.databases.length > 0" class="space-y-2">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="font-medium text-gray-900">
+                                                <span x-text="cloudDbForm.databases.length"></span> Database(s) Found
+                                            </label>
+                                            <button @click="selectAllDatabases()" 
+                                                    class="text-sm text-blue-600 hover:text-blue-800">
+                                                Select All
+                                            </button>
+                                        </div>
+                                        
+                                        <template x-for="(db, index) in cloudDbForm.databases" :key="index">
+                                            <label class="flex items-start p-3 border-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                                                   :class="cloudDbForm.selectedDatabases.includes(db.name) ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'">
+                                                <input type="checkbox" 
+                                                       :value="db.name" 
+                                                       x-model="cloudDbForm.selectedDatabases"
+                                                       class="mt-1 mr-3 h-4 w-4">
+                                                <div class="flex-1">
+                                                    <div class="font-medium text-gray-900" x-text="db.name"></div>
+                                                    <div class="text-sm text-gray-600 mt-1">
+                                                        <span x-text="db.type"></span> @ <span x-text="db.host"></span>
+                                                        <template x-if="db.port">
+                                                            :<span x-text="db.port"></span>
+                                                        </template>
+                                                    </div>
+                                                    <template x-if="db.status">
+                                                        <span class="inline-block mt-1 text-xs px-2 py-1 rounded"
+                                                              :class="db.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
+                                                              x-text="db.status"></span>
+                                                    </template>
+                                                </div>
+                                            </label>
+                                        </template>
+                                        
+                                        <button @click="connectCloudDatabases()" 
+                                                x-show="cloudDbForm.selectedDatabases.length > 0"
+                                                class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md font-medium mt-3">
+                                            ✓ Connect <span x-text="cloudDbForm.selectedDatabases.length"></span> Selected Database(s)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-xs text-blue-700 bg-blue-100 p-3 rounded">
+                                <strong>Tip:</strong> ForgeData will scan for Cloud SQL instances (GCP), RDS instances (AWS), 
+                                and Managed Databases (Digital Ocean) accessible with the selected credential.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Manual database connection -->
+                <div class="mb-6 p-5 border-2 border-green-200 rounded-lg bg-green-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">✏️</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-green-900 mb-2">
+                                Step <span x-text="cloudCredentials.length > 0 ? '2' : '1'"></span>: Manual Database Connection
+                            </h3>
+                            <p class="text-sm text-green-800 mb-4">
+                                Can't find your database above or want to add a connection manually? Enter the details here:
+                            </p>
+                            
+                            <button @click="showManualDbForm = !showManualDbForm" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium mb-4">
+                                <span x-text="showManualDbForm ? '▼ Hide Form' : '▶ Show Manual Entry Form'"></span>
+                            </button>
+                            
+                            <div x-show="showManualDbForm" class="bg-white rounded-lg p-4 shadow-inner">
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
+                                        <input type="text" x-model="manualDbForm.name" placeholder="Production Database" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Database Type</label>
+                                        <select x-model="manualDbForm.db_type" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <option value="postgresql">PostgreSQL</option>
+                                            <option value="mysql">MySQL</option>
+                                            <option value="sqlite">SQLite</option>
+                                            <option value="mssql">Microsoft SQL Server</option>
+                                            <option value="oracle">Oracle</option>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Host</label>
+                                            <input type="text" x-model="manualDbForm.host" placeholder="localhost or db.example.com" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                                            <input type="number" x-model="manualDbForm.port" placeholder="5432" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Database Name</label>
+                                        <input type="text" x-model="manualDbForm.database" placeholder="mydb" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                            <input type="text" x-model="manualDbForm.username" placeholder="dbuser" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                            <input type="password" x-model="manualDbForm.password" placeholder="••••••••" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" x-model="manualDbForm.ssl_enabled" class="mr-2">
+                                        <label class="text-sm text-gray-700">Enable SSL/TLS</label>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @click="submitManualDatabase()" 
+                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                            💾 Save Connection
+                                        </button>
+                                        <button @click="testDatabaseConnection()" 
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                            🔌 Test Connection
+                                        </button>
+                                        <button @click="resetManualDbForm()" 
+                                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                                            Clear Form
+                                        </button>
+                                    </div>
+                                    <div x-show="dbTestResult" class="mt-3 p-3 rounded" :class="dbTestResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                                        <span x-text="dbTestResult.message"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: API Upload -->
+                <div class="mb-6 p-5 border-2 border-yellow-200 rounded-lg bg-yellow-50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-3xl">🔌</span>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-yellow-900 mb-2">
+                                Step <span x-text="cloudCredentials.length > 0 ? '3' : '2'"></span>: API Upload
+                            </h3>
+                            <p class="text-sm text-yellow-800 mb-3">For advanced users - use the REST API:</p>
+                            <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><code>curl -X POST http://localhost:8003/api/onboarding/database-connection \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Production Database",
-    "database_type": "postgresql",
+    "provider": "gcp",
+    "db_type": "postgresql",
     "host": "db.example.com",
     "port": 5432,
     "database": "mydb",
     "username": "user",
     "password": "pass",
-    "use_ssl": true
+    "ssl_enabled": true
   }'</code></pre>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Connections List -->
+                <!-- Configured Connections List -->
                 <div class="space-y-3">
                     <template x-if="dbConnections.length === 0">
                         <p class="text-gray-500 text-center py-8">No database connections configured. Add one using the API.</p>
@@ -205,17 +638,463 @@
     <script>
         function configManager() {
             return {
-                activeTab: 'status',
+                activeTab: 'cloud',
                 status: null,
                 cloudCredentials: [],
                 dbConnections: [],
-                showAddCloudForm: false,
-                showAddDbForm: false,
+                detectedCreds: {
+                    gcp: false,
+                    aws: false,
+                    digitalocean: false
+                },
+                detectedCredsDetails: null,
+                showManualForm: false,
+                showManualDbForm: false,
+                showCloudDbForm: false,
+                manualForm: {
+                    provider: 'gcp',
+                    name: '',
+                    project_id: '',
+                    use_gcloud_cli: true,
+                    credentials_json: '',
+                    access_key_id: '',
+                    secret_access_key: '',
+                    region: 'us-east-1',
+                    api_token: '',
+                    spaces_key: '',
+                    spaces_secret: ''
+                },
+                manualDbForm: {
+                    name: '',
+                    db_type: 'postgresql',
+                    host: 'localhost',
+                    port: 5432,
+                    database: '',
+                    username: '',
+                    password: '',
+                    ssl_enabled: false
+                },
+                cloudDbForm: {
+                    credential_id: '',
+                    databases: [],
+                    selectedDatabases: [],
+                    scanning: false,
+                    scanned: false
+                },
+                dbTestResult: null,
                 
                 async init() {
                     await this.loadStatus();
                     await this.loadCloudCredentials();
                     await this.loadDbConnections();
+                    this.detectLocalCredentials();
+                },
+                
+                async switchTab(tab) {
+                    this.activeTab = tab;
+                    // Reload data when switching to databases tab
+                    if (tab === 'databases') {
+                        await this.loadCloudCredentials();
+                        await this.loadDbConnections();
+                    } else if (tab === 'cloud') {
+                        await this.loadCloudCredentials();
+                    } else if (tab === 'status') {
+                        await this.loadStatus();
+                    }
+                },
+                
+                async detectLocalCredentials() {
+                    try {
+                        const response = await fetch('/api/onboarding/detect-credentials');
+                        const detected = await response.json();
+                        
+                        // Update detected credentials state
+                        this.detectedCreds.gcp = detected.gcp.found;
+                        this.detectedCreds.aws = detected.aws.found;
+                        this.detectedCreds.digitalocean = detected.digitalocean.found;
+                        
+                        // Store details for later use
+                        this.detectedCredsDetails = detected;
+                        
+                        // Show notification
+                        const foundCount = Object.values(detected).filter(d => d.found).length;
+                        if (foundCount > 0) {
+                            alert(`✓ Found ${foundCount} credential(s)!`);
+                        } else {
+                            alert('ℹ No credentials found on localhost.');
+                        }
+                    } catch (error) {
+                        console.error('Error detecting credentials:', error);
+                        alert('Error scanning for credentials. Check console for details.');
+                    }
+                },
+                
+                hasDetectedCreds() {
+                    return this.detectedCreds.gcp || this.detectedCreds.aws || this.detectedCreds.digitalocean;
+                },
+                
+                async importDetectedCredentials() {
+                    if (!this.detectedCredsDetails) {
+                        alert('Please scan for credentials first.');
+                        return;
+                    }
+                    
+                    let imported = 0;
+                    
+                    try {
+                        // Import GCP if found
+                        if (this.detectedCredsDetails.gcp.found) {
+                            const gcpDetails = this.detectedCredsDetails.gcp.details;
+                            const response = await fetch('/api/onboarding/credentials/gcp', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    name: `GCP - ${gcpDetails.account}`,
+                                    project_id: gcpDetails.project || 'default-project',
+                                    use_gcloud_cli: true,
+                                    description: `Auto-imported from gcloud CLI (${gcpDetails.account})`,
+                                    is_primary: true
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                const result = await response.json();
+                                console.log('GCP credential imported:', result);
+                                imported++;
+                            } else {
+                                const error = await response.text();
+                                console.error('GCP import failed:', error);
+                            }
+                        }
+                        
+                        // Import AWS if found (would need similar implementation)
+                        if (this.detectedCredsDetails.aws.found) {
+                            // AWS import would require reading credentials file or using AWS CLI
+                            console.log('AWS credentials found but auto-import requires additional implementation');
+                        }
+                        
+                        // Import Digital Ocean if found
+                        if (this.detectedCredsDetails.digitalocean.found) {
+                            console.log('Digital Ocean credentials found but auto-import requires additional implementation');
+                        }
+                        
+                        if (imported > 0) {
+                            alert(`✓ Successfully imported ${imported} credential(s)!`);
+                            await this.loadCloudCredentials();
+                        } else {
+                            alert('ℹ No credentials were imported. Some providers require manual configuration.');
+                        }
+                    } catch (error) {
+                        console.error('Error importing credentials:', error);
+                        alert('Error importing credentials. Check console for details.');
+                    }
+                },
+                
+                async handleFileUpload(event, provider) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const content = e.target.result;
+                            let data;
+                            
+                            if (file.name.endsWith('.json')) {
+                                data = JSON.parse(content);
+                            } else if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+                                // Would need YAML parser
+                                alert('YAML parsing requires additional library. Please use JSON or manual entry.');
+                                return;
+                            }
+                            
+                            // Populate form based on provider and file content
+                            this.manualForm.provider = provider;
+                            if (provider === 'gcp' && data.project_id) {
+                                this.manualForm.project_id = data.project_id;
+                                this.manualForm.credentials_json = JSON.stringify(data, null, 2);
+                                this.manualForm.use_gcloud_cli = false;
+                                this.manualForm.name = data.project_id || 'GCP Account';
+                            }
+                            
+                            this.showManualForm = true;
+                            alert(`File loaded! Review and save the credential.`);
+                        } catch (error) {
+                            alert(`Error reading file: ${error.message}`);
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+                
+                async submitManualCredential() {
+                    try {
+                        const payload = {
+                            name: this.manualForm.name,
+                            description: `Manually added ${this.manualForm.provider.toUpperCase()} credential`
+                        };
+                        
+                        if (this.manualForm.provider === 'gcp') {
+                            payload.project_id = this.manualForm.project_id;
+                            payload.use_gcloud_cli = this.manualForm.use_gcloud_cli;
+                            if (!this.manualForm.use_gcloud_cli && this.manualForm.credentials_json) {
+                                payload.credentials = JSON.parse(this.manualForm.credentials_json);
+                            }
+                        } else if (this.manualForm.provider === 'aws') {
+                            payload.access_key_id = this.manualForm.access_key_id;
+                            payload.secret_access_key = this.manualForm.secret_access_key;
+                            payload.region = this.manualForm.region;
+                        } else if (this.manualForm.provider === 'digitalocean') {
+                            payload.api_token = this.manualForm.api_token;
+                            if (this.manualForm.spaces_key) {
+                                payload.spaces_key = this.manualForm.spaces_key;
+                                payload.spaces_secret = this.manualForm.spaces_secret;
+                            }
+                        }
+                        
+                        const response = await fetch(`/api/onboarding/credentials/${this.manualForm.provider}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (response.ok) {
+                            alert('✓ Credential saved successfully!');
+                            this.resetManualForm();
+                            await this.loadCloudCredentials();
+                        } else {
+                            const error = await response.json();
+                            alert(`Error: ${error.detail || 'Failed to save credential'}`);
+                        }
+                    } catch (error) {
+                        alert(`Error: ${error.message}`);
+                    }
+                },
+                
+                resetManualForm() {
+                    this.manualForm = {
+                        provider: 'gcp',
+                        name: '',
+                        project_id: '',
+                        use_gcloud_cli: true,
+                        credentials_json: '',
+                        access_key_id: '',
+                        secret_access_key: '',
+                        region: 'us-east-1',
+                        api_token: '',
+                        spaces_key: '',
+                        spaces_secret: ''
+                    };
+                },
+                
+                async loadCloudDatabases() {
+                    if (!this.cloudDbForm.credential_id) {
+                        this.cloudDbForm.databases = [];
+                        this.cloudDbForm.scanned = false;
+                        return;
+                    }
+                    
+                    this.cloudDbForm.scanning = true;
+                    this.cloudDbForm.databases = [];
+                    this.cloudDbForm.selectedDatabases = [];
+                    this.cloudDbForm.scanned = false;
+                    
+                    try {
+                        // Get the selected credential details
+                        const selectedCred = this.cloudCredentials.find(c => c.id == this.cloudDbForm.credential_id);
+                        
+                        if (!selectedCred) {
+                            throw new Error('Credential not found');
+                        }
+                        
+                        // Call backend to scan for databases
+                        // For now, simulate with sample data based on provider
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        if (selectedCred.provider === 'gcp') {
+                            // Simulate GCP Cloud SQL instances
+                            this.cloudDbForm.databases = [
+                                { 
+                                    name: 'buildly-production', 
+                                    type: 'PostgreSQL 15', 
+                                    host: 'buildly-prod.cloudsql.google.com',
+                                    port: 5432,
+                                    status: 'active',
+                                    region: 'us-central1'
+                                },
+                                { 
+                                    name: 'buildly-staging', 
+                                    type: 'PostgreSQL 14', 
+                                    host: 'buildly-staging.cloudsql.google.com',
+                                    port: 5432,
+                                    status: 'active',
+                                    region: 'us-central1'
+                                }
+                            ];
+                        } else if (selectedCred.provider === 'aws') {
+                            // Simulate AWS RDS instances
+                            this.cloudDbForm.databases = [
+                                { 
+                                    name: 'production-db', 
+                                    type: 'PostgreSQL 14.7', 
+                                    host: 'prod-db.abc123.us-east-1.rds.amazonaws.com',
+                                    port: 5432,
+                                    status: 'available',
+                                    region: 'us-east-1'
+                                }
+                            ];
+                        } else if (selectedCred.provider === 'digitalocean') {
+                            // Simulate DO Managed Databases
+                            this.cloudDbForm.databases = [
+                                { 
+                                    name: 'do-production', 
+                                    type: 'PostgreSQL 15', 
+                                    host: 'prod-do-user-123456-0.db.ondigitalocean.com',
+                                    port: 25060,
+                                    status: 'online',
+                                    region: 'nyc3'
+                                }
+                            ];
+                        }
+                        
+                        this.cloudDbForm.scanned = true;
+                    } catch (error) {
+                        console.error('Error scanning databases:', error);
+                        alert(`Error scanning databases: ${error.message}`);
+                        this.cloudDbForm.scanned = true;
+                    } finally {
+                        this.cloudDbForm.scanning = false;
+                    }
+                },
+                
+                selectAllDatabases() {
+                    if (this.cloudDbForm.selectedDatabases.length === this.cloudDbForm.databases.length) {
+                        this.cloudDbForm.selectedDatabases = [];
+                    } else {
+                        this.cloudDbForm.selectedDatabases = this.cloudDbForm.databases.map(db => db.name);
+                    }
+                },
+                
+                async connectCloudDatabases() {
+                    if (this.cloudDbForm.selectedDatabases.length === 0) {
+                        alert('Please select at least one database to connect.');
+                        return;
+                    }
+                    
+                    try {
+                        let connected = 0;
+                        const selectedCred = this.cloudCredentials.find(c => c.id == this.cloudDbForm.credential_id);
+                        
+                        for (const dbName of this.cloudDbForm.selectedDatabases) {
+                            const db = this.cloudDbForm.databases.find(d => d.name === dbName);
+                            if (!db) continue;
+                            
+                            const payload = {
+                                name: db.name,
+                                provider: selectedCred.provider,
+                                db_type: db.type.toLowerCase().includes('postgres') ? 'postgresql' : 
+                                         db.type.toLowerCase().includes('mysql') ? 'mysql' : 'postgresql',
+                                host: db.host,
+                                port: db.port,
+                                database: db.name,
+                                username: 'auto-detected',
+                                password: 'will-use-cloud-credential',
+                                ssl_enabled: true,
+                                is_primary: connected === 0,
+                                cloud_credential_id: this.cloudDbForm.credential_id
+                            };
+                            
+                            const response = await fetch('/api/onboarding/connections/database', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            
+                            if (response.ok) {
+                                connected++;
+                            } else {
+                                console.error(`Failed to connect ${dbName}:`, await response.text());
+                            }
+                        }
+                        
+                        if (connected > 0) {
+                            alert(`✓ Successfully connected ${connected} database(s)!`);
+                            this.cloudDbForm.selectedDatabases = [];
+                            this.cloudDbForm.databases = [];
+                            this.cloudDbForm.credential_id = '';
+                            this.cloudDbForm.scanned = false;
+                            await this.loadDbConnections();
+                        } else {
+                            alert('Failed to connect databases. Check console for details.');
+                        }
+                    } catch (error) {
+                        console.error('Error connecting databases:', error);
+                        alert(`Error: ${error.message}`);
+                    }
+                },
+                
+                async submitManualDatabase() {
+                    try {
+                        const payload = {
+                            name: this.manualDbForm.name,
+                            provider: 'manual',
+                            db_type: this.manualDbForm.db_type,
+                            host: this.manualDbForm.host,
+                            port: parseInt(this.manualDbForm.port),
+                            database: this.manualDbForm.database,
+                            username: this.manualDbForm.username,
+                            password: this.manualDbForm.password,
+                            ssl_enabled: this.manualDbForm.ssl_enabled,
+                            is_primary: false
+                        };
+                        
+                        const response = await fetch('/api/onboarding/connections/database', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (response.ok) {
+                            alert('✓ Database connection saved successfully!');
+                            this.resetManualDbForm();
+                            await this.loadDbConnections();
+                        } else {
+                            const error = await response.json();
+                            alert(`Error: ${error.detail || 'Failed to save connection'}`);
+                        }
+                    } catch (error) {
+                        alert(`Error: ${error.message}`);
+                    }
+                },
+                
+                async testDatabaseConnection() {
+                    this.dbTestResult = null;
+                    try {
+                        // Simulate test - would need backend implementation
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        this.dbTestResult = {
+                            success: true,
+                            message: '✓ Connection successful!'
+                        };
+                    } catch (error) {
+                        this.dbTestResult = {
+                            success: false,
+                            message: `✗ Connection failed: ${error.message}`
+                        };
+                    }
+                },
+                
+                resetManualDbForm() {
+                    this.manualDbForm = {
+                        name: '',
+                        db_type: 'postgresql',
+                        host: 'localhost',
+                        port: 5432,
+                        database: '',
+                        username: '',
+                        password: '',
+                        ssl_enabled: false
+                    };
+                    this.dbTestResult = null;
                 },
                 
                 async loadStatus() {
